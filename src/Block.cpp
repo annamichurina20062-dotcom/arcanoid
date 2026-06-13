@@ -1,6 +1,7 @@
 #include "Block.h"
 #include "Bonus.h"
 #include "Constants.h"
+#include <algorithm>
 
 std::unique_ptr<Bonus> NormalBlock::hit() {
     --hp_;
@@ -22,17 +23,16 @@ sf::Color NormalBlock::hpColor() const {
 
 void NormalBlock::draw(sf::RenderWindow& win, const sf::Font& font) const {
     sf::Color base = hpColor();
-    sf::Color outline{
-        (uint8_t)std::min(255, (int)base.r + 60),
-        (uint8_t)std::min(255, (int)base.g + 60),
-        (uint8_t)std::min(255, (int)base.b + 60),
-        140
-    };
+    sf::Color outline(
+        (uint8_t)std::min(255, (int)base.r + BLOCK_OUTLINE_BOOST),
+        (uint8_t)std::min(255, (int)base.g + BLOCK_OUTLINE_BOOST),
+        (uint8_t)std::min(255, (int)base.b + BLOCK_OUTLINE_BOOST),
+        BLOCK_OUTLINE_ALPHA
+    );
     drawRect(win, base, outline, true);
 
-    // Цифра HP по центру блока
-    sf::Text t(font, std::to_string(hp_), 13);
-    t.setFillColor({255, 255, 255, 220});
+    sf::Text t(font, std::to_string(hp_), BLOCK_HP_TEXT_SIZE);
+    t.setFillColor(sf::Color(255, 255, 255, BLOCK_TEXT_ALPHA));
     sf::FloatRect tb = t.getLocalBounds();
     t.setOrigin({tb.position.x + tb.size.x / 2.f,
                  tb.position.y + tb.size.y / 2.f});

@@ -28,29 +28,27 @@ sf::FloatRect Ball::bounds() const {
 }
 
 void Ball::draw(sf::RenderWindow& win) const {
-    // Ореол
-    for (int i = 3; i >= 1; --i) {
-        sf::CircleShape glow(BALL_RADIUS + i * 3.f);
-        glow.setOrigin({BALL_RADIUS + i * 3.f, BALL_RADIUS + i * 3.f});
+    for (int i = BALL_GLOW_LAYERS; i >= 1; --i) {
+        float r = BALL_RADIUS + i * BALL_GLOW_STEP;
+        sf::CircleShape glow(r);
+        glow.setOrigin({r, r});
         glow.setPosition({pos.x, pos.y});
-        glow.setFillColor({255, 255, 255, (uint8_t)(15 * i)});
+        glow.setFillColor(sf::Color(255, 255, 255, (uint8_t)(BALL_GLOW_ALPHA * i)));
         win.draw(glow);
     }
 
-    // Основной мяч
     sf::CircleShape c(BALL_RADIUS);
     c.setOrigin({BALL_RADIUS, BALL_RADIUS});
     c.setPosition({pos.x, pos.y});
-    c.setFillColor({240, 240, 255});
-    c.setOutlineColor({180, 220, 255});
-    c.setOutlineThickness(1.f);
+    c.setFillColor(sf::Color(BALL_COLOR_R, BALL_COLOR_G, BALL_COLOR_B));
+    c.setOutlineColor(sf::Color(BALL_OUTLINE_R, BALL_OUTLINE_G, BALL_OUTLINE_B));
+    c.setOutlineThickness(BALL_OUTLINE);
     win.draw(c);
 
-    // Блик
-    sf::CircleShape glare(BALL_RADIUS * 0.3f);
-    glare.setOrigin({BALL_RADIUS * 0.3f, BALL_RADIUS * 0.3f});
-    glare.setPosition({pos.x - BALL_RADIUS * 0.3f, pos.y - BALL_RADIUS * 0.3f});
-    glare.setFillColor({255, 255, 255, 180});
+    float gr = BALL_RADIUS * BALL_GLARE_RATIO;
+    sf::CircleShape glare(gr);
+    glare.setOrigin({gr, gr});
+    glare.setPosition({pos.x - gr, pos.y - gr});
+    glare.setFillColor(sf::Color(255, 255, 255, BALL_GLARE_ALPHA));
     win.draw(glare);
 }
-

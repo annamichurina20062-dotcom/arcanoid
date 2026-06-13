@@ -32,8 +32,6 @@ Game::Game()
 {
     window_.setFramerateLimit(FPS);
     font_.openFromFile("C:/Windows/Fonts/arial.ttf");
-
-
     buildLevel();
     generateStars();
 }
@@ -43,8 +41,8 @@ void Game::buildLevel() {
     blocks_.clear();
     bonuses_.clear();
 
-    Vec2 ballStart{(float)WINDOW_WIDTH / 2.f, PADDLE_Y - BALL_RADIUS - 2.f};
-    balls_.emplace_back(ballStart, Vec2{0.4f, -1.f});
+    Vec2 ballStart{(float)WINDOW_WIDTH / 2.f, PADDLE_Y - BALL_RADIUS - BALL_SPAWN_GAP};
+    balls_.emplace_back(ballStart, Vec2{BALL_INIT_DIR_X, BALL_INIT_DIR_Y});
 
     auto makeFactory = [](int choice) -> NormalBlock::BonusFactory {
         switch (choice) {
@@ -63,16 +61,16 @@ void Game::buildLevel() {
             float by = BLOCK_OFFSET_Y + row * (BLOCK_H + BLOCK_PAD);
             Vec2  p{bx, by};
 
-            int roll = randInt(0, 9);
-            if (roll == 0) {
+            int roll = randInt(0, BLOCK_ROLL_MAX);
+            if (roll == BLOCK_ROLL_INDESTR) {
                 blocks_.push_back(std::make_unique<IndestructibleBlock>(p));
-            } else if (roll == 1) {
+            } else if (roll == BLOCK_ROLL_SPEED) {
                 blocks_.push_back(std::make_unique<SpeedBlock>(p));
             } else {
-                int hp = randInt(1, 4);
+                int hp = randInt(1, BLOCK_HP_MAX);
                 NormalBlock::BonusFactory factory = nullptr;
-                if (randInt(0, 3) == 0)
-                    factory = makeFactory(randInt(0, 4));
+                if (randInt(0, BLOCK_BONUS_CHANCE) == 0)
+                    factory = makeFactory(randInt(0, BLOCK_BONUS_TYPES));
                 blocks_.push_back(std::make_unique<NormalBlock>(p, hp, std::move(factory)));
             }
         }
@@ -83,7 +81,7 @@ void Game::run() {
     sf::Clock clock;
     while (window_.isOpen() && running_) {
         float dt = clock.restart().asSeconds();
-        dt = std::min(dt, 0.05f);
+        dt = std::min(dt, DT_CAP);
 
         handleEvents();
         if (!paused_) update(dt);
@@ -104,7 +102,7 @@ void Game::handleEvents() {
                 for (auto& b : balls_) {
                     if (b.sticky) {
                         b.sticky = false;
-                        b.vel = Vec2{0.4f, -1.f}.normalized() * b.speed;
+                        b.vel = Vec2{BALL_INIT_DIR_X, BALL_INIT_DIR_Y}.normalized() * b.speed;
                     }
                 }
             }
@@ -207,10 +205,10 @@ void Game::resolveBallVsPaddle(Ball& ball) {
     if (ball.vel.y < 0) return;
 
     float offset = (ball.pos.x - paddle_.centerX()) / (paddle_.width / 2.f);
-    float angle  = offset * 60.f * (3.14159f / 180.f);
+    float angle  = offset * PADDLE_ANGLE_MAX * (PI / 180.f);
     Vec2  dir{ std::sin(angle), -std::cos(angle) };
     ball.vel = dir.normalized() * ball.speed;
-    ball.pos.y = PADDLE_Y - BALL_RADIUS - 1.f;
+    ball.pos.y = PADDLE_Y - BALL_RADIUS - PADDLE_BOUNCE_GAP;
 }
 
 int Game::resolveBallVsBlocks(Ball& ball) {
@@ -268,19 +266,19 @@ void Game::applyBonus(Bonus& b) {
 void Game::onMiss() {
     score_ += SCORE_MISS;
     ++defeats_;
-    paddle_.resize(-15.f);
+    paddle_.resize(-PADDLE_RESIZE_MISS);
 
     if (defeats_ < MAX_DEFEATS) {
-        Vec2 start{paddle_.centerX(), PADDLE_Y - BALL_RADIUS - 2.f};
-        balls_.emplace_back(start, Vec2{0.4f, -1.f});
+        Vec2 start{paddle_.centerX(), PADDLE_Y - BALL_RADIUS - BALL_SPAWN_GAP};
+        balls_.emplace_back(start, Vec2{BALL_INIT_DIR_X, BALL_INIT_DIR_Y});
     }
 }
 
 void Game::draw() {
-    window_.clear({10, 10, 35});
+    window_.clear(sf::Color(BG_TOP_R, BG_TOP_G, BG_TOP_B));
     drawBackground();
 
-    for (const auto& bl : blocks_)  bl->draw(window_, font_); 
+    for (const auto& bl : blocks_)  bl->draw(window_, font_);
     for (const auto& bo : bonuses_) bo->draw(window_);
     for (const auto& b  : balls_)   b.draw(window_);
     paddle_.draw(window_);
@@ -290,10 +288,10 @@ void Game::draw() {
 }
 
 void Game::generateStars() {
-    stars_.resize(120);
+    stars_.resize(STAR_COUNT);
     std::uniform_real_distribution<float> rx(0, WINDOW_WIDTH);
     std::uniform_real_distribution<float> ry(0, WINDOW_HEIGHT);
-    std::uniform_real_distribution<float> rb(80, 255);
+    std::uniform_real_distribution<float> rb(STAR_BRIGHT_MIN, STAR_BRIGHT_MAX);
     for (auto& s : stars_) {
         s.x = rx(rng());
         s.y = ry(rng());
@@ -304,16 +302,16 @@ void Game::generateStars() {
 void Game::drawBackground() {
     sf::RectangleShape top({(float)WINDOW_WIDTH, (float)WINDOW_HEIGHT / 2});
     top.setPosition({0, 0});
-    top.setFillColor({10, 10, 35});
+    top.setFillColor(sf::Color(BG_TOP_R, BG_TOP_G, BG_TOP_B));
     window_.draw(top);
 
     sf::RectangleShape bot({(float)WINDOW_WIDTH, (float)WINDOW_HEIGHT / 2});
     bot.setPosition({0, (float)WINDOW_HEIGHT / 2});
-    bot.setFillColor({15, 10, 40});
+    bot.setFillColor(sf::Color(BG_BOT_R, BG_BOT_G, BG_BOT_B));
     window_.draw(bot);
 
     for (const auto& s : stars_) {
-        sf::CircleShape star(1.f);
+        sf::CircleShape star(STAR_RADIUS);
         star.setPosition({s.x, s.y});
         uint8_t b = (uint8_t)s.brightness;
         star.setFillColor({b, b, b, b});
@@ -322,27 +320,26 @@ void Game::drawBackground() {
 }
 
 void Game::drawHUD() {
-    sf::RectangleShape bar({(float)WINDOW_WIDTH, 36.f});
+    sf::RectangleShape bar({(float)WINDOW_WIDTH, HUD_HEIGHT});
     bar.setFillColor({20, 10, 50, 180});
     window_.draw(bar);
 
-    auto makeText = [&](const std::string& s, float x, float y, unsigned sz = 18,
-                        sf::Color col = {220, 180, 255}) {
+    auto makeText = [&](const std::string& s, float x, float y,
+                        unsigned sz = 18, sf::Color col = {220, 180, 255}) {
         sf::Text t(font_, s, sz);
         t.setPosition({x, y});
         t.setFillColor(col);
         window_.draw(t);
     };
 
-    makeText("SCORE", 10.f, 4.f, 12, {180, 130, 255});
-    makeText(std::to_string(score_), 10.f, 16.f, 16);
+    makeText("SCORE", 10.f, 4.f, HUD_LABEL_SIZE, {180, 130, 255});
+    makeText(std::to_string(score_), 10.f, 16.f, HUD_VALUE_SIZE);
 
-
-    makeText("LIVES", WINDOW_WIDTH - 160.f, 4.f, 12, {180, 130, 255});
+    makeText("LIVES", WINDOW_WIDTH - LIVES_LABEL_X, 4.f, HUD_LABEL_SIZE, {180, 130, 255});
     for (int i = 0; i < MAX_DEFEATS; ++i) {
-        sf::CircleShape heart(6.f);
-        heart.setOrigin({6.f, 6.f});
-        heart.setPosition({(float)(WINDOW_WIDTH - 140 + i * 20), 26.f});
+        sf::CircleShape heart(HEART_RADIUS);
+        heart.setOrigin({HEART_RADIUS, HEART_RADIUS});
+        heart.setPosition({(float)(WINDOW_WIDTH - HEART_X_START + i * HEART_SPACING), HEART_Y});
         if (i < MAX_DEFEATS - defeats_)
             heart.setFillColor({60, 180, 255});
         else
@@ -354,26 +351,22 @@ void Game::drawHUD() {
 
     if (paused_)
         makeText("PAUSED  (P to resume)",
-                 WINDOW_WIDTH / 2.f - 110.f, WINDOW_HEIGHT / 2.f, 24,
-                 {200, 220, 255});
+                 WINDOW_WIDTH / 2.f - 110.f, WINDOW_HEIGHT / 2.f,
+                 HUD_BIG_SIZE, {200, 220, 255});
 
     if (defeats_ >= MAX_DEFEATS) {
-    makeText("G A M E   O V E R",
-             WINDOW_WIDTH / 2.f - 140.f, WINDOW_HEIGHT / 2.f - 30.f, 28,
-             {255, 150, 200});
-    makeText("Press R to restart",
-             WINDOW_WIDTH / 2.f - 100.f, WINDOW_HEIGHT / 2.f + 10.f, 20,
-             {180, 150, 255});
+        makeText("G A M E   O V E R",
+                 WINDOW_WIDTH / 2.f - 140.f, WINDOW_HEIGHT / 2.f - 30.f,
+                 HUD_GAMEOVER_SIZE, {255, 150, 200});
+        makeText("Press R to restart",
+                 WINDOW_WIDTH / 2.f - 100.f, WINDOW_HEIGHT / 2.f + 10.f,
+                 20, {180, 150, 255});
+    }
 }
-}
-
 
 bool Game::allBlocksCleared() const {
     for (const auto& b : blocks_)
-        if (b->alive && dynamic_cast<IndestructibleBlock*>(b.get()) == nullptr)
+        if (b->alive && b->isDestructible())
             return false;
     return true;
 }
-
-
-

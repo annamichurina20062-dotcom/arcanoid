@@ -29,26 +29,20 @@ sf::FloatRect Paddle::bounds() const {
 }
 
 void Paddle::draw(sf::RenderWindow& win) const {
-    //тень
     sf::RectangleShape shadow({width, PADDLE_H});
-    shadow.setPosition({x + 3.f, PADDLE_Y + 3.f});
-    shadow.setFillColor({0, 0, 0, 80});
+    shadow.setPosition({x + PADDLE_SHADOW_OFFSET, PADDLE_Y + PADDLE_SHADOW_OFFSET});
+    shadow.setFillColor(sf::Color(0, 0, 0, PADDLE_SHADOW_ALPHA));
     win.draw(shadow);
 
-    //основное тело
     sf::RectangleShape shape({width, PADDLE_H});
     shape.setPosition({x, PADDLE_Y});
-    shape.setFillColor({130, 80, 220});
-    shape.setOutlineColor({200, 150, 255});
-    shape.setOutlineThickness(1.5f);
+    shape.setFillColor(sf::Color(PADDLE_COLOR_R, PADDLE_COLOR_G, PADDLE_COLOR_B));
+    shape.setOutlineColor(sf::Color(PADDLE_OUTLINE_R, PADDLE_OUTLINE_G, PADDLE_OUTLINE_B));
+    shape.setOutlineThickness(PADDLE_OUTLINE);
     win.draw(shape);
 
-    //блик сверху
-    sf::RectangleShape glare({width * 0.7f, 3.f});
-    glare.setPosition({x + width * 0.15f, PADDLE_Y + 2.f});
-    glare.setFillColor({255, 255, 255, 80});
+    sf::RectangleShape glare({width * PADDLE_GLARE_WIDTH, PADDLE_GLARE_H});
+    glare.setPosition({x + width * PADDLE_GLARE_OFFSET, PADDLE_Y + PADDLE_GLARE_Y});
+    glare.setFillColor(sf::Color(255, 255, 255, PADDLE_GLARE_ALPHA));
     win.draw(glare);
 }
-
-
-

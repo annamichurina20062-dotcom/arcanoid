@@ -17,6 +17,7 @@ public:
 
     virtual std::unique_ptr<Bonus> hit() = 0;
     virtual bool solid() const { return true; }
+    virtual bool isDestructible() const { return true; }
     virtual void draw(sf::RenderWindow& win, const sf::Font& font) const = 0;
 
     sf::FloatRect bounds() const {
@@ -25,24 +26,24 @@ public:
 
 protected:
     void drawRect(sf::RenderWindow& win, sf::Color fill,
-                  sf::Color outline = {255, 255, 255, 60},
+                  sf::Color outline = sf::Color(255, 255, 255, BLOCK_OUTLINE_DEF_ALPHA),
                   bool glare = true) const {
-        sf::RectangleShape shadow({(float)BLOCK_W - 2.f, (float)BLOCK_H - 2.f});
-        shadow.setPosition({pos.x + 2.f, pos.y + 2.f});
-        shadow.setFillColor({0, 0, 0, 60});
+        sf::RectangleShape shadow({(float)BLOCK_W - BLOCK_INNER_OFFSET, (float)BLOCK_H - BLOCK_INNER_OFFSET});
+        shadow.setPosition({pos.x + BLOCK_SHADOW_OFFSET, pos.y + BLOCK_SHADOW_OFFSET});
+        shadow.setFillColor(sf::Color(0, 0, 0, BLOCK_SHADOW_ALPHA));
         win.draw(shadow);
 
-        sf::RectangleShape r({(float)BLOCK_W - 2.f, (float)BLOCK_H - 2.f});
-        r.setPosition({pos.x + 1.f, pos.y + 1.f});
+        sf::RectangleShape r({(float)BLOCK_W - BLOCK_INNER_OFFSET, (float)BLOCK_H - BLOCK_INNER_OFFSET});
+        r.setPosition({pos.x + BLOCK_INNER_OFFSET, pos.y + BLOCK_INNER_OFFSET});
         r.setFillColor(fill);
         r.setOutlineColor(outline);
-        r.setOutlineThickness(1.f);
+        r.setOutlineThickness(BALL_OUTLINE);
         win.draw(r);
 
         if (glare) {
-            sf::RectangleShape g({(float)BLOCK_W * 0.6f, 3.f});
-            g.setPosition({pos.x + (float)BLOCK_W * 0.2f, pos.y + 3.f});
-            g.setFillColor({255, 255, 255, 50});
+            sf::RectangleShape g({(float)BLOCK_W * BLOCK_GLARE_RATIO, BLOCK_GLARE_H});
+            g.setPosition({pos.x + (float)BLOCK_W * BLOCK_GLARE_X_RATIO, pos.y + BLOCK_GLARE_Y});
+            g.setFillColor(sf::Color(255, 255, 255, BLOCK_GLARE_ALPHA));
             win.draw(g);
         }
     }
@@ -52,8 +53,12 @@ class IndestructibleBlock final : public Block {
 public:
     using Block::Block;
     std::unique_ptr<Bonus> hit() override { return nullptr; }
+    bool isDestructible() const override { return false; }
     void draw(sf::RenderWindow& win, const sf::Font& font) const override {
-        drawRect(win, {80, 80, 95}, {150, 150, 170, 120}, false);
+        drawRect(win,
+            sf::Color(INDESTR_R, INDESTR_G, INDESTR_B),
+            sf::Color(INDESTR_OUT_R, INDESTR_OUT_G, INDESTR_OUT_B, INDESTR_OUT_ALPHA),
+            false);
     }
 };
 
@@ -78,6 +83,9 @@ public:
     using Block::Block;
     std::unique_ptr<Bonus> hit() override;
     void draw(sf::RenderWindow& win, const sf::Font& font) const override {
-        drawRect(win, {180, 80, 200}, {220, 150, 255, 120}, true);
+        drawRect(win,
+            sf::Color(SPEED_R, SPEED_G, SPEED_B),
+            sf::Color(SPEED_OUT_R, SPEED_OUT_G, SPEED_OUT_B, SPEED_OUT_ALPHA),
+            true);
     }
 };

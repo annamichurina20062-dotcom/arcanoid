@@ -3,21 +3,21 @@
 #include <algorithm>
 
 void BonusPaddleGrow::activate(GameState& gs) {
-    gs.paddle.resize(+30.f);
+    gs.paddle.resize(+BONUS_PADDLE_GROW);
 }
 
 void BonusPaddleShrink::activate(GameState& gs) {
-    gs.paddle.resize(-25.f);
+    gs.paddle.resize(-BONUS_PADDLE_SHRINK);
 }
 
 void BonusSpeedUp::activate(GameState& gs) {
     for (auto& b : gs.balls)
-        b.setSpeed(b.speed + 50.f);
+        b.setSpeed(b.speed + BONUS_SPEED_DELTA);
 }
 
 void BonusSpeedDown::activate(GameState& gs) {
     for (auto& b : gs.balls)
-        b.setSpeed(b.speed - 50.f);
+        b.setSpeed(b.speed - BONUS_SPEED_DELTA);
 }
 
 void BonusSticky::activate(GameState& gs) {
